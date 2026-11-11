@@ -12,5 +12,6 @@ public record GitHubRepoResponse(
         @JsonProperty("stargazers_count") Integer stargazersCount,
         @JsonProperty("forks_count") Integer forksCount,
         @JsonProperty("updated_at") String updatedAt,
+        @JsonProperty("pushed_at") String pushedAt,
         Boolean fork
 ) {}

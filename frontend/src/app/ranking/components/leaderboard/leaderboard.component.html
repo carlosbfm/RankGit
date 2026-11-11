@@ -10,10 +10,22 @@
       Filtre o histórico por período, pesquise desenvolvedores e acompanhe streaks, commits e o score individual.
     </p>
     <div class="hero-actions">
-      <a routerLink="/ranking" class="rk-btn rk-btn-primary">
+      <button
+        type="button"
+        class="rk-btn rk-btn-primary btn-sync-now"
+        (click)="syncCommits()"
+        [disabled]="isSyncing() || rankingService.isLoading()"
+        title="Buscar novos commits no GitHub imediatamente"
+      >
+        <i class="bi" [ngClass]="isSyncing() ? 'bi-arrow-repeat spin' : 'bi-arrow-clockwise'"></i>
+        <span>{{ isSyncing() ? 'Sincronizando Commits...' : 'Sincronizar Commits Agora' }}</span>
+      </button>
+
+      <a routerLink="/ranking" class="rk-btn rk-btn-secondary">
         <i class="bi bi-trophy"></i>
         <span>Ver Pódio</span>
       </a>
+
       <a routerLink="/score" class="rk-btn rk-btn-outline btn-score-info">
         <i class="bi bi-stars"></i>
         <span>Como Funciona o Score?</span>

@@ -131,7 +131,14 @@ public class AdminService {
         );
     }
 
-    @Scheduled(cron = "0 0 */3 * * *") // A cada 3 horas
+    @Transactional
+    public void syncDeveloperByUsername(String username) {
+        TrackedDeveloper dev = developerRepository.findByUsernameIgnoreCase(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Desenvolvedor não encontrado: " + username));
+        syncDeveloperData(dev);
+    }
+
+    @Scheduled(fixedDelay = 180000, initialDelay = 30000) // Sincronização automática a cada 3 minutos
     public void scheduledSync() {
         log.info("Iniciando sincronização periódica de commits do GitHub...");
         syncAllDevelopers();

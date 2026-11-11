@@ -122,6 +122,17 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
           </div>
 
           <div class="profile-hero-actions">
+            <button
+              type="button"
+              class="rk-btn rk-btn-secondary btn-sync-dev"
+              (click)="syncDevNow()"
+              [disabled]="isSyncing"
+              title="Buscar novos commits deste desenvolvedor no GitHub agora"
+            >
+              <i class="bi" [ngClass]="isSyncing ? 'bi-arrow-repeat spin' : 'bi-arrow-clockwise'"></i>
+              <span>{{ isSyncing ? 'Sincronizando...' : 'Sincronizar Commits' }}</span>
+            </button>
+
             <a [href]="dev.htmlUrl" target="_blank" rel="noopener noreferrer" class="rk-btn rk-btn-primary">
               <i class="bi bi-github"></i>
               <span>Abrir Perfil no GitHub</span>
@@ -305,11 +316,14 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
   styles: [`
     .dev-details-page {
       max-width: 1100px;
+      width: 100%;
       margin: 0 auto;
       padding: 1.5rem 1rem 4rem;
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
+      box-sizing: border-box;
+      overflow-x: hidden;
     }
 
     .back-nav {
@@ -687,11 +701,19 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
     /* Content Columns: Repos & Commits */
     .content-columns {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
       gap: 1.5rem;
+      width: 100%;
+      box-sizing: border-box;
 
       @media (min-width: 900px) {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+
+      .repos-column, .commits-column {
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
       }
 
       .column-header {
@@ -699,6 +721,7 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
         align-items: center;
         justify-content: space-between;
         margin-bottom: 1rem;
+        gap: 0.5rem;
 
         h3 {
           font-size: 1.05rem;
@@ -707,6 +730,8 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
           display: flex;
           align-items: center;
           gap: 0.5rem;
+          min-width: 0;
+          word-break: break-word;
         }
 
         .count-badge {
@@ -716,6 +741,7 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
           padding: 0.2rem 0.5rem;
           border-radius: 9999px;
           border: 1px solid var(--border-color);
+          flex-shrink: 0;
         }
       }
     }
@@ -725,6 +751,8 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
       display: flex;
       flex-direction: column;
       gap: 0.85rem;
+      width: 100%;
+      min-width: 0;
     }
 
     .repo-card {
@@ -735,6 +763,12 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
+      word-break: break-word;
+      overflow-wrap: break-word;
       transition: border-color 0.15s ease;
 
       &:hover {
@@ -746,6 +780,7 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
         align-items: center;
         justify-content: space-between;
         gap: 0.5rem;
+        flex-wrap: wrap;
 
         .repo-name {
           display: inline-flex;
@@ -755,10 +790,14 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
           font-size: 0.95rem;
           color: var(--accent-blue);
           text-decoration: none;
+          min-width: 0;
+          word-break: break-all;
+          overflow-wrap: anywhere;
 
           .ext-sm {
             font-size: 0.7rem;
             opacity: 0.7;
+            flex-shrink: 0;
           }
 
           &:hover {
@@ -772,6 +811,7 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
           color: var(--text-muted);
           padding: 0.1rem 0.45rem;
           border-radius: 9999px;
+          flex-shrink: 0;
 
           &.fork {
             color: #d29922;
@@ -783,7 +823,9 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
       .repo-desc {
         font-size: 0.84rem;
         color: var(--text-muted);
-        line-height: 1.4;
+        line-height: 1.45;
+        word-break: break-word;
+        overflow-wrap: anywhere;
 
         &.empty {
           font-style: italic;
@@ -805,6 +847,7 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
           align-items: center;
           gap: 0.35rem;
           color: var(--text-main);
+          flex-shrink: 0;
 
           .lang-color {
             width: 10px;
@@ -831,6 +874,7 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
           align-items: center;
           gap: 0.75rem;
           color: var(--text-dim);
+          flex-wrap: wrap;
 
           .stat-item {
             display: inline-flex;
@@ -850,6 +894,8 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
       display: flex;
       flex-direction: column;
       gap: 0.85rem;
+      width: 100%;
+      min-width: 0;
     }
 
     .commit-item {
@@ -860,12 +906,19 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
       display: flex;
       flex-direction: column;
       gap: 0.45rem;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
+      word-break: break-word;
+      overflow-wrap: break-word;
 
       .commit-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 0.5rem;
+        flex-wrap: wrap;
         font-size: 0.82rem;
 
         .commit-repo {
@@ -873,11 +926,16 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
           align-items: center;
           gap: 0.35rem;
           color: var(--text-muted);
+          min-width: 0;
+          word-break: break-all;
+          overflow-wrap: anywhere;
 
           a {
             color: var(--text-main);
             font-weight: 500;
             text-decoration: none;
+            word-break: break-all;
+            overflow-wrap: anywhere;
 
             &:hover {
               color: var(--accent-blue);
@@ -893,6 +951,7 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
           color: var(--accent-blue);
           text-decoration: none;
           font-size: 0.78rem;
+          flex-shrink: 0;
 
           code {
             background: #21262d;
@@ -912,7 +971,10 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
         font-size: 0.88rem;
         color: var(--text-main);
         font-weight: 500;
-        line-height: 1.4;
+        line-height: 1.45;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        white-space: normal;
       }
 
       .commit-footer {
@@ -921,6 +983,7 @@ import { BADGE_DEFINITIONS, DeveloperDetails } from '../../ranking.model';
         gap: 0.35rem;
         font-size: 0.75rem;
         color: var(--text-dim);
+        flex-wrap: wrap;
       }
     }
 
@@ -979,6 +1042,7 @@ export class DeveloperDetailsComponent implements OnInit {
   username = '';
   dev: DeveloperDetails | null = null;
   isLoading = true;
+  isSyncing = false;
   errorMessage = '';
 
   readonly badgeDefs = BADGE_DEFINITIONS;
@@ -1004,12 +1068,43 @@ export class DeveloperDetailsComponent implements OnInit {
 
     this.rankingService.getDeveloperDetails(username).subscribe({
       next: (data) => {
+        if (data && data.recentCommits) {
+          // Ordena sempre do mais novo até o mais velho
+          data.recentCommits.sort((a, b) => {
+            if (!a.date && !b.date) return 0;
+            if (!a.date) return 1;
+            if (!b.date) return -1;
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
+          });
+        }
         this.dev = data;
         this.isLoading = false;
       },
       error: (err) => {
         this.isLoading = false;
         this.errorMessage = err.error?.message || 'Falha ao carregar detalhes do desenvolvedor no GitHub.';
+      }
+    });
+  }
+
+  syncDevNow(): void {
+    if (!this.username) return;
+    this.isSyncing = true;
+    this.rankingService.syncDeveloper(this.username).subscribe({
+      next: (data) => {
+        if (data && data.recentCommits) {
+          data.recentCommits.sort((a, b) => {
+            if (!a.date && !b.date) return 0;
+            if (!a.date) return 1;
+            if (!b.date) return -1;
+            return new Date(b.date).getTime() - new Date(a.date).getTime();
+          });
+        }
+        this.dev = data;
+        this.isSyncing = false;
+      },
+      error: () => {
+        this.isSyncing = false;
       }
     });
   }

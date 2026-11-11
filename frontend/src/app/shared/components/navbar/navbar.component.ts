@@ -90,39 +90,41 @@ import { AuthService } from '../../../auth/auth.service';
       </div>
 
       <!-- Menu Gaveta Mobile (Dropdown expansível em smartphones e tablets pequenos) -->
-      <div class="mobile-drawer fade-in" *ngIf="isMobileMenuOpen && authService.isAuthenticated()">
-        <nav class="mobile-nav-links">
-          <a routerLink="/ranking" routerLinkActive="active" class="mobile-link" (click)="closeMobileMenu()">
-            <i class="bi bi-trophy"></i>
-            <span>Ranking Geral</span>
-          </a>
+      <div class="mobile-drawer" *ngIf="isMobileMenuOpen && authService.isAuthenticated()">
+        <div class="rk-container">
+          <nav class="mobile-nav-links">
+            <a routerLink="/ranking" routerLinkActive="active" class="mobile-link" (click)="closeMobileMenu()">
+              <i class="bi bi-trophy"></i>
+              <span>Ranking Geral</span>
+            </a>
 
-          <a routerLink="/commits" routerLinkActive="active" class="mobile-link" (click)="closeMobileMenu()">
-            <i class="bi bi-table"></i>
-            <span>Tabela de Commits</span>
-          </a>
+            <a routerLink="/commits" routerLinkActive="active" class="mobile-link" (click)="closeMobileMenu()">
+              <i class="bi bi-table"></i>
+              <span>Tabela de Commits</span>
+            </a>
 
-          <a routerLink="/feed" routerLinkActive="active" class="mobile-link" (click)="closeMobileMenu()">
-            <i class="bi bi-broadcast"></i>
-            <span>Feed Social de Commits</span>
-          </a>
+            <a routerLink="/feed" routerLinkActive="active" class="mobile-link" (click)="closeMobileMenu()">
+              <i class="bi bi-broadcast"></i>
+              <span>Feed Social de Commits</span>
+            </a>
 
-          <a routerLink="/score" routerLinkActive="active" class="mobile-link" (click)="closeMobileMenu()">
-            <i class="bi bi-stars"></i>
-            <span>Como Funciona o Score</span>
-          </a>
+            <a routerLink="/score" routerLinkActive="active" class="mobile-link" (click)="closeMobileMenu()">
+              <i class="bi bi-stars"></i>
+              <span>Como Funciona o Score</span>
+            </a>
 
-          <a
-            *ngIf="authService.isAdmin()"
-            routerLink="/admin"
-            routerLinkActive="active"
-            class="mobile-link admin-link"
-            (click)="closeMobileMenu()"
-          >
-            <i class="bi bi-shield-lock-fill"></i>
-            <span>Painel Administrativo</span>
-          </a>
-        </nav>
+            <a
+              *ngIf="authService.isAdmin()"
+              routerLink="/admin"
+              routerLinkActive="active"
+              class="mobile-link admin-link"
+              (click)="closeMobileMenu()"
+            >
+              <i class="bi bi-shield-lock-fill"></i>
+              <span>Painel Administrativo</span>
+            </a>
+          </nav>
+        </div>
       </div>
     </header>
   `,
@@ -338,7 +340,9 @@ import { AuthService } from '../../../auth/auth.service';
       background: #161b22;
       border-top: 1px solid var(--border-color);
       margin-top: 0.75rem;
-      padding: 1rem 1.25rem;
+      padding: 0.75rem 0 1rem;
+      position: relative;
+      width: 100%;
       box-shadow: 0 16px 32px rgba(0, 0, 0, 0.6);
 
       .mobile-nav-links {

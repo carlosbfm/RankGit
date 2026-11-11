@@ -9,12 +9,16 @@ import com.rankgit.github.dto.GitHubUserResponse;
 import com.rankgit.ranking.dto.DeveloperDetailsDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -30,6 +34,12 @@ public class GitHubApiClient {
 
     private final RestClient restClient;
     private final GitHubProperties gitHubProperties;
+
+    @Value("${spring.security.oauth2.client.registration.github.client-id:}")
+    private String clientId;
+
+    @Value("${spring.security.oauth2.client.registration.github.client-secret:}")
+    private String clientSecret;
 
     public GitHubApiClient(GitHubProperties gitHubProperties) {
         this.gitHubProperties = gitHubProperties;
@@ -107,14 +117,56 @@ public class GitHubApiClient {
         }
     }
 
+    private LocalDate parseCommitDate(String rawDate) {
+        if (rawDate == null || rawDate.isBlank()) return null;
+        try {
+            OffsetDateTime odt = OffsetDateTime.parse(rawDate);
+            return odt.atZoneSameInstant(ZoneId.systemDefault()).toLocalDate();
+        } catch (Exception e1) {
+            try {
+                Instant instant = Instant.parse(rawDate);
+                return instant.atZone(ZoneId.systemDefault()).toLocalDate();
+            } catch (Exception e2) {
+                try {
+                    return LocalDate.parse(rawDate.substring(0, 10));
+                } catch (Exception e3) {
+                    return null;
+                }
+            }
+        }
+    }
+
     /**
-     * Busca o total de commits e os últimos commits do usuário em UMA ÚNICA chamada otimizada,
+     * Busca o total de commits e os últimos commits do usuário em chamada otimizada,
      * agrupando as datas reais e calculando o streak exato sem estourar o rate limit do GitHub.
      */
     public CommitActivityResult fetchCommitActivity(String username) {
         String cleanUsername = extractUsername(username);
         String query = "author:" + cleanUsername;
 
+        Set<String> knownShas = new HashSet<>();
+        Map<LocalDate, Integer> dailyCounts = new HashMap<>();
+        int searchTotalCount = 0;
+
+        // 1. Busca commits recentes diretamente dos repositórios do desenvolvedor
+        // (captura commits de repositórios próprios mesmo se o autor git tiver email/nome não indexado no search)
+        try {
+            List<DeveloperDetailsDto.RecentCommitDto> recentCommits = fetchRecentCommits(cleanUsername);
+            for (DeveloperDetailsDto.RecentCommitDto c : recentCommits) {
+                if (c.sha() == null || c.sha().isBlank()) continue;
+                knownShas.add(c.sha());
+
+                LocalDate date = parseCommitDate(c.date());
+                if (date != null) {
+                    dailyCounts.put(date, dailyCounts.getOrDefault(date, 0) + 1);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Falha ao obter commits recentes dos repositórios para contagem de {}: {}", cleanUsername, e.getMessage());
+        }
+
+        // 2. Busca histórico geral via Search API
+        Set<String> searchShas = new HashSet<>();
         try {
             GitHubCommitSearchResponse response = restClient.get()
                     .uri(uriBuilder -> uriBuilder
@@ -128,12 +180,18 @@ public class GitHubApiClient {
                     .retrieve()
                     .body(GitHubCommitSearchResponse.class);
 
-            int totalCount = response != null && response.totalCount() != null ? response.totalCount() : 0;
-            Map<LocalDate, Integer> dailyCounts = new HashMap<>();
+            searchTotalCount = response != null && response.totalCount() != null ? response.totalCount() : 0;
 
             if (response != null && response.items() != null) {
                 for (GitHubCommitSearchResponse.CommitItem item : response.items()) {
-                    if (item.commit() == null) continue;
+                    if (item.commit() == null || item.sha() == null) continue;
+                    searchShas.add(item.sha());
+
+                    // Se esse commit já foi registrado pelos repositórios recentes, não duplica no diário
+                    if (knownShas.contains(item.sha())) {
+                        continue;
+                    }
+
                     String rawDate = null;
                     if (item.commit().author() != null && item.commit().author().date() != null) {
                         rawDate = item.commit().author().date();
@@ -141,23 +199,22 @@ public class GitHubApiClient {
                         rawDate = item.commit().committer().date();
                     }
 
-                    if (rawDate != null && rawDate.length() >= 10) {
-                        try {
-                            LocalDate date = LocalDate.parse(rawDate.substring(0, 10));
-                            dailyCounts.put(date, dailyCounts.getOrDefault(date, 0) + 1);
-                        } catch (Exception ex) {
-                            // Ignora datas com formato irregular
-                        }
+                    LocalDate date = parseCommitDate(rawDate);
+                    if (date != null) {
+                        dailyCounts.put(date, dailyCounts.getOrDefault(date, 0) + 1);
                     }
                 }
             }
-
-            int streak = calculateStreak(dailyCounts);
-            return new CommitActivityResult(totalCount, dailyCounts, streak);
         } catch (Exception e) {
-            log.warn("Erro ao buscar atividade de commits para {}: {}", cleanUsername, e.getMessage());
-            return new CommitActivityResult(0, new HashMap<>(), 0);
+            log.warn("Erro ao buscar atividade de commits na search para {}: {}", cleanUsername, e.getMessage());
         }
+
+        // Commits extras dos repositórios que não estavam indexados no search
+        long trulyExtraCommits = knownShas.stream().filter(sha -> !searchShas.contains(sha)).count();
+        int totalCount = Math.max((int) (searchTotalCount + trulyExtraCommits), dailyCounts.values().stream().mapToInt(Integer::intValue).sum());
+
+        int streak = calculateStreak(dailyCounts);
+        return new CommitActivityResult(totalCount, dailyCounts, streak);
     }
 
     private int calculateStreak(Map<LocalDate, Integer> dailyCounts) {
@@ -219,13 +276,13 @@ public class GitHubApiClient {
     }
 
     /**
-     * Busca os repositórios públicos mais recentes de um usuário no GitHub.
+     * Busca os repositórios públicos mais recentes de um usuário no GitHub, ordenados pelos últimos pushes.
      */
     public List<GitHubRepoResponse> fetchUserRepos(String username) {
         String cleanUsername = extractUsername(username);
         try {
             GitHubRepoResponse[] repos = restClient.get()
-                    .uri("/users/{username}/repos?sort=updated&per_page=6", cleanUsername)
+                    .uri("/users/{username}/repos?sort=pushed&per_page=6", cleanUsername)
                     .headers(this::applyAuthHeader)
                     .retrieve()
                     .body(GitHubRepoResponse[].class);
@@ -239,29 +296,79 @@ public class GitHubApiClient {
 
     /**
      * Busca os commits recentes do usuário com dados de repositório e mensagem.
+     * Combina os commits dos repositórios recentemente atualizados com a busca global de commits,
+     * garantindo que commits em repositórios próprios sejam capturados mesmo se o autor local tiver
+     * nome/email ligeiramente divergente da conta GitHub.
      */
     public List<DeveloperDetailsDto.RecentCommitDto> fetchRecentCommits(String username) {
         String cleanUsername = extractUsername(username);
-        String query = "author:" + cleanUsername;
+        Map<String, DeveloperDetailsDto.RecentCommitDto> commitsMap = new LinkedHashMap<>();
 
+        // 1. Busca commits diretamente dos repositórios recentemente modificados pelo desenvolvedor
         try {
+            List<GitHubRepoResponse> repos = fetchUserRepos(cleanUsername);
+            for (GitHubRepoResponse repo : repos) {
+                if (repo.name() == null || repo.name().isBlank()) continue;
+                try {
+                    GitHubCommitSearchResponse.CommitItem[] repoCommits = restClient.get()
+                            .uri("/repos/{owner}/{repo}/commits?per_page=5", cleanUsername, repo.name())
+                            .headers(this::applyAuthHeader)
+                            .retrieve()
+                            .body(GitHubCommitSearchResponse.CommitItem[].class);
+
+                    if (repoCommits != null) {
+                        for (GitHubCommitSearchResponse.CommitItem item : repoCommits) {
+                            if (item.commit() == null || item.sha() == null) continue;
+
+                            String sha = item.sha();
+                            String shortSha = sha.length() >= 7 ? sha.substring(0, 7) : sha;
+                            String message = item.commit().message() != null ? item.commit().message().split("\n")[0] : "";
+                            String date = "";
+                            if (item.commit().author() != null && item.commit().author().date() != null) {
+                                date = item.commit().author().date();
+                            } else if (item.commit().committer() != null && item.commit().committer().date() != null) {
+                                date = item.commit().committer().date();
+                            }
+
+                            String repoFullName = cleanUsername + "/" + repo.name();
+                            String commitUrl = item.htmlUrl() != null && !item.htmlUrl().isBlank()
+                                    ? item.htmlUrl()
+                                    : "https://github.com/" + repoFullName + "/commit/" + sha;
+
+                            commitsMap.putIfAbsent(sha, new DeveloperDetailsDto.RecentCommitDto(
+                                    sha, shortSha, message, date, repoFullName, repo.htmlUrl(), commitUrl
+                            ));
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("Não foi possível buscar commits do repositório {}/{}: {}", cleanUsername, repo.name(), e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Falha ao obter lista de repositórios para coletar commits de {}: {}", cleanUsername, e.getMessage());
+        }
+
+        // 2. Complementa com a busca global de commits por autor
+        try {
+            String query = "author:" + cleanUsername;
             GitHubCommitSearchResponse response = restClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path("/search/commits")
                             .queryParam("q", query)
                             .queryParam("sort", "author-date")
                             .queryParam("order", "desc")
-                            .queryParam("per_page", 10)
+                            .queryParam("per_page", 15)
                             .build())
                     .headers(this::applyAuthHeader)
                     .retrieve()
                     .body(GitHubCommitSearchResponse.class);
 
             if (response != null && response.items() != null) {
-                List<DeveloperDetailsDto.RecentCommitDto> list = new ArrayList<>();
                 for (GitHubCommitSearchResponse.CommitItem item : response.items()) {
-                    if (item.commit() == null) continue;
+                    if (item.commit() == null || item.sha() == null) continue;
 
+                    String sha = item.sha();
+                    String shortSha = sha.length() >= 7 ? sha.substring(0, 7) : sha;
                     String message = item.commit().message() != null ? item.commit().message().split("\n")[0] : "";
                     String date = "";
                     if (item.commit().author() != null && item.commit().author().date() != null) {
@@ -270,29 +377,40 @@ public class GitHubApiClient {
                         date = item.commit().committer().date();
                     }
 
-                    String sha = item.sha() != null ? item.sha() : "";
-                    String shortSha = sha.length() >= 7 ? sha.substring(0, 7) : sha;
                     String repoName = item.repository() != null ? item.repository().fullName() : "";
                     String repoUrl = item.repository() != null ? item.repository().htmlUrl() : "";
                     String commitUrl = item.htmlUrl() != null ? item.htmlUrl() : "";
 
-                    list.add(new DeveloperDetailsDto.RecentCommitDto(
+                    commitsMap.putIfAbsent(sha, new DeveloperDetailsDto.RecentCommitDto(
                             sha, shortSha, message, date, repoName, repoUrl, commitUrl
                     ));
                 }
-                return list;
             }
         } catch (Exception e) {
-            log.warn("Erro ao buscar commits recentes para {}: {}", cleanUsername, e.getMessage());
+            log.warn("Erro ao buscar commits na API de search para {}: {}", cleanUsername, e.getMessage());
         }
 
-        return Collections.emptyList();
+        List<DeveloperDetailsDto.RecentCommitDto> list = new ArrayList<>(commitsMap.values());
+
+        // Garante ordenação estrita dos commits do mais novo até o mais velho
+        list.sort((c1, c2) -> {
+            if (c1.date() == null && c2.date() == null) return 0;
+            if (c1.date() == null) return 1;
+            if (c2.date() == null) return -1;
+            return c2.date().compareTo(c1.date());
+        });
+
+        return list.size() > 15 ? list.subList(0, 15) : list;
     }
 
     private void applyAuthHeader(HttpHeaders headers) {
+        headers.set("Accept", "application/vnd.github.cloak-preview+json, application/vnd.github+json");
+        headers.set("User-Agent", "RankGit-Application");
         String token = gitHubProperties.getApiToken();
         if (token != null && !token.trim().isEmpty()) {
             headers.setBearerAuth(token.trim());
+        } else if (clientId != null && !clientId.isBlank() && clientSecret != null && !clientSecret.isBlank()) {
+            headers.setBasicAuth(clientId.trim(), clientSecret.trim());
         }
     }
 }

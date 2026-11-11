@@ -1,4 +1,4 @@
-import { Component, OnInit, computed } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { RankingService } from '../../ranking.service';
@@ -23,7 +23,18 @@ import { PodiumComponent } from '../podium/podium.component';
         </p>
 
         <div class="hero-actions">
-          <a routerLink="/commits" class="rk-btn rk-btn-primary">
+          <button
+            type="button"
+            class="rk-btn rk-btn-primary"
+            (click)="syncNow()"
+            [disabled]="isSyncing() || rankingService.isLoading()"
+            title="Atualizar commits recentes do GitHub agora"
+          >
+            <i class="bi" [ngClass]="isSyncing() ? 'bi-arrow-repeat spin' : 'bi-arrow-clockwise'"></i>
+            <span>{{ isSyncing() ? 'Sincronizando...' : 'Sincronizar Commits' }}</span>
+          </button>
+
+          <a routerLink="/commits" class="rk-btn rk-btn-secondary">
             <i class="bi bi-table"></i>
             <span>Ver Tabela de Commits</span>
           </a>
@@ -366,6 +377,8 @@ import { PodiumComponent } from '../podium/podium.component';
   `]
 })
 export class RankingPageComponent implements OnInit {
+  isSyncing = signal(false);
+
   constructor(public rankingService: RankingService) {}
 
   topThree = computed<RankingItem[]>(() => {
@@ -383,6 +396,24 @@ export class RankingPageComponent implements OnInit {
 
   ngOnInit(): void {
     // Carrega o ranking geral
+    this.refresh();
+  }
+
+  syncNow(): void {
+    this.isSyncing.set(true);
+    this.rankingService.syncRankings().subscribe({
+      next: () => {
+        this.isSyncing.set(false);
+        this.refresh();
+      },
+      error: () => {
+        this.isSyncing.set(false);
+        this.refresh();
+      }
+    });
+  }
+
+  refresh(): void {
     this.rankingService.fetchLeaderboard({ period: 'all_time', sortBy: 'commits', page: 0, size: 10 }).subscribe();
   }
 }

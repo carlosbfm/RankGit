@@ -42,5 +42,13 @@ export class RankingService {
   getDeveloperDetails(username: string): Observable<DeveloperDetails> {
     return this.http.get<DeveloperDetails>(`${this.API_BASE}/developer/${encodeURIComponent(username)}`);
   }
+
+  syncRankings(): Observable<any> {
+    return this.http.post<any>(`${this.API_BASE}/sync`, {});
+  }
+
+  syncDeveloper(username: string): Observable<DeveloperDetails> {
+    return this.http.post<DeveloperDetails>(`${this.API_BASE}/sync/${encodeURIComponent(username)}`, {});
+  }
 }
 

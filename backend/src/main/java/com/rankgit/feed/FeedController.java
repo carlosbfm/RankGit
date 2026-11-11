@@ -1,5 +1,6 @@
 package com.rankgit.feed;
 
+import com.rankgit.administration.AdminService;
 import com.rankgit.feed.dto.FeedPageResponse;
 import com.rankgit.feed.dto.ReactionRequest;
 import jakarta.validation.Valid;
@@ -15,9 +16,11 @@ import java.util.Map;
 public class FeedController {
 
     private final FeedService feedService;
+    private final AdminService adminService;
 
-    public FeedController(FeedService feedService) {
+    public FeedController(FeedService feedService, AdminService adminService) {
         this.feedService = feedService;
+        this.adminService = adminService;
     }
 
     @GetMapping
@@ -34,13 +37,17 @@ public class FeedController {
 
     @PostMapping("/sync")
     public ResponseEntity<Map<String, Object>> syncFeed() {
+        try {
+            adminService.syncAllDevelopers();
+        } catch (Exception ignored) {}
+
         int newCommits = feedService.syncCommitsFromTrackedDevelopers();
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "newCommits", newCommits,
                 "message", newCommits > 0
-                        ? newCommits + " novos commits foram incorporados ao feed!"
-                        : "O feed já está sincronizado com os commits mais recentes."
+                        ? newCommits + " novos commits foram incorporados ao feed e ranking atualizado!"
+                        : "O feed e o ranking já estão sincronizados com os commits mais recentes do GitHub."
         ));
     }
 

@@ -22,6 +22,7 @@ export class LeaderboardComponent implements OnInit {
   customEnd = '';
   showCustomDates = false;
   showScoreModal = signal(false);
+  isSyncing = signal(false);
 
   // Paginação
   currentPage = signal(0);
@@ -162,6 +163,20 @@ export class LeaderboardComponent implements OnInit {
     }
 
     this.rankingService.fetchLeaderboard(filter).subscribe();
+  }
+
+  syncCommits(): void {
+    this.isSyncing.set(true);
+    this.rankingService.syncRankings().subscribe({
+      next: () => {
+        this.isSyncing.set(false);
+        this.refresh();
+      },
+      error: () => {
+        this.isSyncing.set(false);
+        this.refresh();
+      }
+    });
   }
 
   trackByDevId(_index: number, item: RankingItem): number {
