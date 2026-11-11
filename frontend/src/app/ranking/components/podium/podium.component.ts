@@ -185,12 +185,112 @@ import { RankingItem } from '../../ranking.model';
 
     @media (max-width: 640px) {
       .podium-wrapper {
-        flex-direction: column;
-        align-items: center;
-        gap: 2rem;
+        gap: 0.4rem;
+        margin: 1rem 0 1.75rem;
+        padding: 0.5rem 0.1rem;
+        align-items: flex-end;
       }
+
+      .podium-card {
+        max-width: 33.3%;
+        min-width: 0;
+
+        &.rank-1 { order: 2; }
+        &.rank-2 { order: 1; }
+        &.rank-3 { order: 3; }
+      }
+
+      .rank-crown {
+        padding: 0.15rem 0.4rem;
+        font-size: 0.72rem;
+        gap: 0.2rem;
+        margin-bottom: 0.3rem;
+      }
+
+      .podium-avatar {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 0.4rem;
+
+        &.gold-border {
+          width: 62px;
+          height: 62px;
+          border-width: 2px;
+        }
+        &.silver-border {
+          border-width: 2px;
+        }
+        &.bronze-border {
+          border-width: 2px;
+        }
+      }
+
+      .podium-name {
+        font-size: 0.82rem;
+        max-width: 100%;
+      }
+
+      .podium-handle {
+        font-size: 0.68rem;
+        margin-bottom: 0.2rem;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .podium-stat {
+        font-size: 0.72rem;
+        margin-bottom: 0.35rem;
+
+        strong {
+          font-size: 0.88rem;
+        }
+      }
+
+      .tier-badge {
+        font-size: 0.6rem;
+        padding: 0.1rem 0.35rem;
+        letter-spacing: 0;
+      }
+
       .podium-pedestal {
-        display: none;
+        display: block;
+        margin-top: 0.6rem;
+
+        &.gold-pedestal {
+          height: 60px;
+        }
+        &.silver-pedestal {
+          height: 42px;
+        }
+        &.bronze-pedestal {
+          height: 26px;
+        }
+      }
+    }
+
+    @media (max-width: 360px) {
+      .podium-wrapper {
+        gap: 0.25rem;
+      }
+
+      .podium-avatar {
+        width: 42px;
+        height: 42px;
+
+        &.gold-border {
+          width: 54px;
+          height: 54px;
+        }
+      }
+
+      .podium-name {
+        font-size: 0.76rem;
+      }
+
+      .podium-stat strong {
+        font-size: 0.8rem;
       }
     }
   `]

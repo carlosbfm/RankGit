@@ -827,7 +827,9 @@ import { RankingItem } from '../../../ranking/ranking.model';
 
     .table-responsive {
       width: 100%;
+      max-width: 100%;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       border: 1px solid var(--border-color);
       border-radius: 8px;
       background: #0d1117;
@@ -1164,7 +1166,8 @@ import { RankingItem } from '../../../ranking/ranking.model';
       .pagination-info {
         display: flex;
         align-items: center;
-        gap: 1.5rem;
+        flex-wrap: wrap;
+        gap: 0.85rem;
         font-size: 0.85rem;
         color: var(--text-muted);
 
@@ -1282,7 +1285,7 @@ import { RankingItem } from '../../../ranking/ranking.model';
         padding: 1.25rem 0.5rem 3rem;
       }
       .admin-card {
-        padding: 1.25rem 0.85rem;
+        padding: 1rem 0.65rem;
       }
       .page-title {
         font-size: 1.75rem;
@@ -1290,10 +1293,45 @@ import { RankingItem } from '../../../ranking/ranking.model';
       .dev-actions-grid {
         grid-template-columns: 1fr;
       }
+      .table-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+
+        .badge-count {
+          align-self: flex-start;
+        }
+      }
       .pagination-bar {
         flex-direction: column;
         align-items: center;
         gap: 0.75rem;
+        padding: 0.75rem 0.25rem;
+
+        .pagination-info {
+          flex-direction: column;
+          align-items: center;
+          gap: 0.4rem;
+          text-align: center;
+          width: 100%;
+          font-size: 0.8rem;
+
+          .page-size-selector {
+            justify-content: center;
+          }
+        }
+
+        .pagination-nav {
+          width: 100%;
+          justify-content: center;
+          flex-wrap: wrap;
+          gap: 0.35rem;
+
+          .page-btn {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.78rem;
+          }
+        }
       }
       .users-header {
         flex-direction: column;
@@ -1301,6 +1339,23 @@ import { RankingItem } from '../../../ranking/ranking.model';
         gap: 0.75rem;
         button {
           width: 100%;
+        }
+      }
+    }
+
+    @media (max-width: 480px) {
+      .admin-tabs {
+        gap: 0.4rem;
+        padding-bottom: 0.85rem;
+        margin-bottom: 1rem;
+
+        .tab-btn {
+          flex: 1 1 calc(50% - 0.4rem);
+          min-width: 120px;
+          padding: 0.5rem 0.35rem;
+          font-size: 0.76rem;
+          justify-content: center;
+          gap: 0.3rem;
         }
       }
     }

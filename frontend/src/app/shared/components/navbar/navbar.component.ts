@@ -135,21 +135,27 @@ import { AuthService } from '../../../auth/auth.service';
       top: 0;
       z-index: 100;
       padding: 0.75rem 0;
+      width: 100%;
+      max-width: 100vw;
+      box-sizing: border-box;
     }
 
     .nav-content {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
+      gap: 0.75rem;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .nav-brand {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.5rem;
       text-decoration: none;
       cursor: pointer;
+      flex-shrink: 0;
 
       .brand-icon {
         font-size: 1.6rem;
@@ -244,7 +250,8 @@ import { AuthService } from '../../../auth/auth.service';
     .nav-actions {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
+      flex-shrink: 0;
     }
 
     .user-badge {
@@ -412,11 +419,24 @@ import { AuthService } from '../../../auth/auth.service';
     }
 
     @media (max-width: 480px) {
+      .brand-icon {
+        font-size: 1.35rem;
+      }
       .brand-title {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
       }
       .user-badge {
-        padding: 0.25rem 0.4rem;
+        padding: 0.2rem 0.4rem;
+        gap: 0.35rem;
+
+        .user-avatar {
+          width: 24px;
+          height: 24px;
+        }
+      }
+      .btn-hamburger {
+        padding: 0.3rem 0.5rem;
+        font-size: 1.15rem;
       }
     }
   `]
