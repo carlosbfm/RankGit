@@ -24,7 +24,8 @@ USER rankgit:rankgit
 
 COPY --from=build --chown=rankgit:rankgit /app/target/*.jar app.jar
 
-# Configuração de memória otimizada para o tier gratuito do Render (512MB RAM)
+# Configuração de timezone e memória otimizada para o tier gratuito do Render (512MB RAM)
+ENV TZ="America/Sao_Paulo"
 ENV JAVA_OPTS="-Xms64m -Xmx256m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m -Djava.security.egd=file:/dev/./urandom -XX:+ExitOnOutOfMemoryError"
 
 EXPOSE 8080

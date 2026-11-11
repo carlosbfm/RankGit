@@ -193,18 +193,22 @@ public class FeedService {
         );
     }
 
+    private static final ZoneId ZONE_BR = ZoneId.of("America/Sao_Paulo");
+
     private LocalDateTime parseDate(String raw) {
-        if (raw == null || raw.trim().isEmpty()) return LocalDateTime.now();
+        if (raw == null || raw.trim().isEmpty()) return LocalDateTime.now(ZONE_BR);
         try {
-            return OffsetDateTime.parse(raw).toLocalDateTime();
+            OffsetDateTime odt = OffsetDateTime.parse(raw);
+            return odt.atZoneSameInstant(ZONE_BR).toLocalDateTime();
         } catch (Exception e1) {
             try {
-                return Instant.parse(raw).atZone(ZoneId.systemDefault()).toLocalDateTime();
+                Instant instant = Instant.parse(raw);
+                return instant.atZone(ZONE_BR).toLocalDateTime();
             } catch (Exception e2) {
                 try {
                     return LocalDateTime.parse(raw.substring(0, 19));
                 } catch (Exception e3) {
-                    return LocalDateTime.now();
+                    return LocalDateTime.now(ZONE_BR);
                 }
             }
         }
@@ -212,9 +216,11 @@ public class FeedService {
 
     private String formatTimeAgo(LocalDateTime dt) {
         if (dt == null) return "agora";
-        Duration d = Duration.between(dt, LocalDateTime.now());
-        long minutes = Math.max(0, d.toMinutes());
-        if (minutes < 1) return "agora mesmo";
+        Duration d = Duration.between(dt, LocalDateTime.now(ZONE_BR));
+        if (d.isNegative() || d.getSeconds() < 45) {
+            return "agora mesmo";
+        }
+        long minutes = d.toMinutes();
         if (minutes < 60) return "há " + minutes + " " + (minutes == 1 ? "minuto" : "minutos");
         long hours = d.toHours();
         if (hours < 24) return "há " + hours + " " + (hours == 1 ? "hora" : "horas");
