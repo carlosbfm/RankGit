@@ -1,0 +1,12 @@
+<div class="app-layout" [class.auth-layout]="isLoginPage()">
+  <!-- Navbar Principal (Oculta na tela de login) -->
+  <app-navbar *ngIf="!isLoginPage()"></app-navbar>
+
+  <!-- Conteúdo Principal com as Páginas Roteadas -->
+  <main class="rk-container main-content" [class.auth-main]="isLoginPage()">
+    <router-outlet></router-outlet>
+  </main>
+
+  <!-- Rodapé (Oculto na tela de login) -->
+  <app-footer *ngIf="!isLoginPage()"></app-footer>
+</div>

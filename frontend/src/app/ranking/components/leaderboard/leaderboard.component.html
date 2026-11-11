@@ -1,0 +1,295 @@
+<div class="leaderboard-page fade-in">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-badge">
+      <i class="bi bi-table"></i>
+      <span>Métricas e Contribuições</span>
+    </div>
+    <h1 class="hero-title">Tabela de Commits</h1>
+    <p class="hero-subtitle">
+      Filtre o histórico por período, pesquise desenvolvedores e acompanhe streaks, commits e o score individual.
+    </p>
+    <div class="hero-actions">
+      <a routerLink="/ranking" class="rk-btn rk-btn-primary">
+        <i class="bi bi-trophy"></i>
+        <span>Ver Pódio</span>
+      </a>
+      <a routerLink="/score" class="rk-btn rk-btn-outline btn-score-info">
+        <i class="bi bi-stars"></i>
+        <span>Como Funciona o Score?</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Barra de Filtros e Controles -->
+  <div class="filters-card rk-card">
+    <!-- Presets de Período -->
+    <div class="presets-row">
+      <div class="presets-buttons">
+        <button
+          *ngFor="let p of presets"
+          type="button"
+          class="preset-btn"
+          [class.active]="activePreset === p.id"
+          (click)="setPreset(p.id)"
+        >
+          <i class="bi" [ngClass]="p.icon"></i>
+          <span>{{ p.label }}</span>
+        </button>
+      </div>
+
+      <!-- Campo de Busca Reativo Instantâneo -->
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          placeholder="Buscar por nome ou @username..."
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+        <button *ngIf="searchQuery()" class="btn-clear-search" (click)="clearSearch()" type="button" title="Limpar busca">
+          <i class="bi bi-x-circle-fill"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Seletor de Datas Customizadas (visível no modo custom) -->
+    <div class="custom-dates-row" *ngIf="showCustomDates">
+      <div class="date-input-group">
+        <label><i class="bi bi-calendar-event"></i> De:</label>
+        <input type="date" [(ngModel)]="customStart" class="form-date" />
+      </div>
+      <div class="date-input-group">
+        <label><i class="bi bi-calendar-check"></i> Até:</label>
+        <input type="date" [(ngModel)]="customEnd" class="form-date" />
+      </div>
+      <button class="rk-btn rk-btn-primary" (click)="applyCustomRange()">
+        <i class="bi bi-check2"></i>
+        <span>Filtrar Período</span>
+      </button>
+    </div>
+
+    <!-- Ordenação e Contadores -->
+    <div class="sorting-row">
+      <div class="count-badge">
+        <i class="bi bi-people-fill"></i>
+        <span>{{ rankingService.leaderboardData()?.totalDevelopers || 0 }} desenvolvedores monitorados</span>
+      </div>
+
+      <div class="sort-selector">
+        <label><i class="bi bi-arrow-down-up"></i> Ordenar por:</label>
+        <select [(ngModel)]="sortBy" (ngModelChange)="onSortChange($event)" class="sort-dropdown">
+          <option *ngFor="let opt of sortOptions" [value]="opt.id">{{ opt.label }}</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela de Ranking Principal (mantém montada evitando reconstrução do DOM) -->
+  <div class="table-container rk-card">
+    <div *ngIf="rankingService.isLoading()" class="table-loading-bar"></div>
+    <table class="rk-table" [class.table-refreshing]="rankingService.isLoading()">
+      <thead>
+        <tr>
+          <th class="th-rank">#</th>
+          <th>Desenvolvedor</th>
+          <th>Liga / Tier</th>
+          <th>Conquistas</th>
+          <th class="th-num">Commits no Período</th>
+          <th class="th-num">Sequência</th>
+          <th class="th-num">Score</th>
+          <th>Últimos 7 dias</th>
+          <th class="th-action"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let dev of filteredLeaderboard(); trackBy: trackByDevId" class="ranking-row">
+          <!-- Rank Position -->
+          <td class="td-rank">
+            <span class="rank-number" [ngClass]="{
+              'rank-top-1': dev.position === 1,
+              'rank-top-2': dev.position === 2,
+              'rank-top-3': dev.position === 3
+            }">
+              <i *ngIf="dev.position === 1" class="bi bi-trophy-fill rank-icon gold"></i>
+              <i *ngIf="dev.position === 2" class="bi bi-award-fill rank-icon silver"></i>
+              <i *ngIf="dev.position === 3" class="bi bi-award-fill rank-icon bronze"></i>
+              <span *ngIf="dev.position > 3">{{ dev.position }}</span>
+            </span>
+          </td>
+
+          <!-- Developer Profile -->
+          <td class="td-dev">
+            <a [routerLink]="['/dev', dev.username]" class="dev-cell dev-cell-link" title="Ver detalhes de @{{ dev.username }}">
+              <img [src]="dev.avatarUrl" [alt]="dev.username" class="dev-avatar" />
+              <div class="dev-text">
+                <span class="dev-name">{{ dev.name || dev.username }}</span>
+                <span class="dev-username">&#64;{{ dev.username }}</span>
+              </div>
+            </a>
+          </td>
+
+          <!-- Tier Badge -->
+          <td>
+            <span class="tier-badge" [ngClass]="'tier-' + dev.tier.toLowerCase()">
+              <i class="bi bi-shield-shaded"></i>
+              {{ dev.tier }}
+            </span>
+          </td>
+
+          <!-- Gamification Badges -->
+          <td>
+            <div class="badges-list">
+              <ng-container *ngFor="let b of dev.badges">
+                <span
+                  *ngIf="badgeDefs[b]"
+                  class="game-badge"
+                  [title]="badgeDefs[b].title"
+                >
+                  <i class="bi" [ngClass]="badgeDefs[b].icon" [style.color]="badgeDefs[b].color"></i>
+                </span>
+              </ng-container>
+              <span *ngIf="!dev.badges || dev.badges.length === 0" class="empty-badge">
+                -
+              </span>
+            </div>
+          </td>
+
+          <!-- Commits in Period -->
+          <td class="td-num">
+            <div class="commits-cell">
+              <strong class="commits-period">{{ dev.commitsInPeriod | number }}</strong>
+              <span class="commits-total">total: {{ dev.totalCommits | number }}</span>
+            </div>
+          </td>
+
+          <!-- Streak -->
+          <td class="td-num">
+            <span class="streak-badge" [class.streak-active]="dev.currentStreak > 0">
+              <i class="bi bi-fire"></i>
+              <span>{{ dev.currentStreak }} d</span>
+            </span>
+          </td>
+
+          <!-- RankGit Score -->
+          <td class="td-num">
+            <span class="score-pill">{{ dev.score | number }}</span>
+          </td>
+
+          <!-- Mini Sparkline Activity (7 dias) -->
+          <td class="td-sparkline">
+            <div class="sparkline-bars" title="Atividade dos últimos 7 dias">
+              <div
+                *ngFor="let act of dev.recentActivity"
+                class="spark-bar"
+                [style.height.%]="calcSparkHeight(act.commitCount, dev.recentActivity)"
+                [class.has-commits]="act.commitCount > 0"
+                [title]="act.date + ': ' + act.commitCount + ' commits'"
+              ></div>
+            </div>
+          </td>
+
+          <!-- External Link & Dev Details Link -->
+          <td class="td-action">
+            <div class="table-actions-group">
+              <a
+                [routerLink]="['/dev', dev.username]"
+                class="link-details"
+                title="Ver perfil completo e detalhes do desenvolvedor"
+              >
+                <i class="bi bi-person-badge"></i>
+              </a>
+              <a
+                [href]="dev.htmlUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link-github"
+                title="Abrir perfil no GitHub"
+              >
+                <i class="bi bi-box-arrow-up-right"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Estado Vazio -->
+        <tr *ngIf="filteredLeaderboard().length === 0 && !rankingService.isLoading()">
+          <td colspan="9" class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p *ngIf="searchQuery()">Nenhum desenvolvedor encontrado para "<strong>{{ searchQuery() }}</strong>".</p>
+            <p *ngIf="!searchQuery()">Nenhum desenvolvedor cadastrado no ranking.</p>
+            <button *ngIf="searchQuery()" class="rk-btn rk-btn-secondary btn-clear-filter" (click)="clearSearch()">
+              <i class="bi bi-arrow-counterclockwise"></i>
+              <span>Limpar Filtro</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Controles de Paginação -->
+    <div class="pagination-bar" *ngIf="rankingService.leaderboardData() as data">
+      <div class="pagination-info">
+        <span>
+          Mostrando
+          <strong>{{ (currentPage() * pageSize()) + (filteredLeaderboard().length > 0 ? 1 : 0) }}</strong>
+          -
+          <strong>{{ Math.min((currentPage() + 1) * pageSize(), data.totalDevelopers) }}</strong>
+          de
+          <strong>{{ data.totalDevelopers }}</strong> desenvolvedores
+        </span>
+
+        <div class="page-size-selector">
+          <label for="page-size">Exibir:</label>
+          <select
+            id="page-size"
+            class="form-control select-size"
+            [ngModel]="pageSize()"
+            (ngModelChange)="onPageSizeChange($event)"
+          >
+            <option [value]="5">5 por pág.</option>
+            <option [value]="10">10 por pág.</option>
+            <option [value]="25">25 por pág.</option>
+            <option [value]="50">50 por pág.</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pagination-nav" *ngIf="data.totalPages && data.totalPages > 1">
+        <button
+          type="button"
+          class="page-btn page-btn-prev"
+          [disabled]="currentPage() === 0"
+          (click)="prevPage()"
+          title="Página Anterior"
+        >
+          <i class="bi bi-chevron-left"></i>
+          <span>Anterior</span>
+        </button>
+
+        <div class="page-numbers">
+          <button
+            *ngFor="let p of pageNumbers()"
+            type="button"
+            class="page-number-btn"
+            [class.active]="p === currentPage()"
+            (click)="goToPage(p)"
+          >
+            {{ p + 1 }}
+          </button>
+        </div>
+
+        <button
+          type="button"
+          class="page-btn page-btn-next"
+          [disabled]="currentPage() >= data.totalPages - 1"
+          (click)="nextPage()"
+          title="Próxima Página"
+        >
+          <span>Próxima</span>
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
