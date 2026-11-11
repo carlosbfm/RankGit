@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rankgit-db
+    environment:
+      POSTGRES_DB: rankgit
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rankgit"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rankgit-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/rankgit
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgrespassword
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      JWT_SECRET: rankgitSuperSecretJwtKeyMustBeAtLeast256BitsLongForHMACSHA256!
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-Ov23liM8XYWtu7zggZZL}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-your_github_client_secret}
+      INITIAL_ADMIN_USERNAME: ${INITIAL_ADMIN_USERNAME:-carlosbfm}
+      OAUTH2_REDIRECT_URI: ${OAUTH2_REDIRECT_URI:-http://localhost:4200/oauth2/redirect}
+      CORS_ALLOWED_ORIGINS: http://localhost:4200,http://localhost
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rankgit-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

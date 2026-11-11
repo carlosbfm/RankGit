@@ -5,75 +5,79 @@ O **RankGit** é uma plataforma moderna, gamificada e competitiva para acompanha
 
 ---
 
-## 📋 Pré-requisitos para Rodar o Projeto
+## 📋 Como Rodar o Projeto
 
-Antes de iniciar, certifique-se de ter instalado em seu ambiente:
-* **Java 21 JDK** (OpenJDK ou Oracle JDK 21+)
-* **Apache Maven 3.9+** (ou use `./mvnw`)
-* **Node.js 20+** e **npm 10+**
-* **PostgreSQL 14+** (rodando localmente ou via Docker na porta padrão `5432`)
-* Uma conta no **GitHub** (caso deseje habilitar o login social OAuth2)
+Você pode rodar o RankGit de duas maneiras:
+1. **Opção 1 (Recomendada — Mais Fácil)**: Usando **Docker Compose** (não precisa instalar Java, Maven nem Node.js na sua máquina).
+2. **Opção 2 (Manual Tradicional)**: Instalando e rodando Java 21, Maven e Node.js localmente.
 
 ---
 
-## ⚡ Como Rodar o Projeto Passo a Passo
+## 🐳 Opção 1: Rodando com Docker Compose (Sem instalar Java nem Angular)
 
-### 1. Configurar o Arquivo de Variáveis de Ambiente (`.env`)
-Na raiz do projeto, crie o seu arquivo `.env` a partir do modelo seguro:
+Tudo o que você precisa é ter o [Docker](https://www.docker.com/) e o Docker Compose instalados.
+
+### 1. Criar o arquivo `.env`
+Na raiz do projeto, copie o modelo e preencha suas variáveis se desejar:
 ```bash
 cp .env.example .env
 ```
-Abra o arquivo `.env` e configure suas credenciais de banco e chaves:
-```env
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/rankgit
-SPRING_DATASOURCE_USERNAME=postgres
-SPRING_DATASOURCE_PASSWORD=sua_senha_do_postgres
 
-JWT_SECRET=coloque_uma_chave_longa_e_aleatoria_com_mais_de_32_caracteres_123456
-JWT_EXPIRATION_MS=86400000
-
-GITHUB_CLIENT_ID=seu_client_id_do_github
-GITHUB_CLIENT_SECRET=seu_client_secret_do_github
-GITHUB_API_TOKEN=seu_personal_access_token_opcional
-INITIAL_ADMIN_USERNAME=seu_usuario_github_admin
-OAUTH2_REDIRECT_URI=http://localhost:4200/oauth2/redirect
+### 2. Subir todo o ambiente com um único comando
+Na raiz do repositório, execute:
+```bash
+docker compose up -d
 ```
 
-> [!IMPORTANT]
-> O arquivo `.env` contém credenciais e segredos locais e está protegido pelo `.gitignore`. **Nunca commite o arquivo `.env`**.
+O Docker fará o download e build automático de tudo:
+* 🐘 **PostgreSQL 16**: Rodando na porta `5432` com volume persistente e schema inicial carregado.
+* ☕ **Backend (Spring Boot 3 + Java 21)**: Rodando na porta `8080`.
+* 🅰️ **Frontend (Angular + Nginx)**: Rodando na porta `4200`.
+
+### 3. Acessar a aplicação
+* Abra no seu navegador: **`http://localhost:4200`**
+* Para parar os containers:
+```bash
+docker compose down
+```
 
 ---
 
-### 2. Configurar o Banco de Dados PostgreSQL
-Crie a base de dados `rankgit` e carregue o schema inicial com os desenvolvedores monitorados:
-```bash
-# Criar o banco de dados (se ainda não existir):
-psql -U postgres -c "CREATE DATABASE rankgit;"
+## ⚡ Opção 2: Rodando Manualmente Passo a Passo
 
-# Executar o script de criação de tabelas e dados iniciais:
+### Pré-requisitos
+* **Java 21 JDK**
+* **Apache Maven 3.9+**
+* **Node.js 20+** e **npm 10+**
+* **PostgreSQL 14+** local
+
+### 1. Configurar o Arquivo de Variáveis de Ambiente (`.env`)
+Na raiz do projeto, crie o seu arquivo `.env`:
+```bash
+cp .env.example .env
+```
+
+### 2. Configurar o Banco de Dados PostgreSQL
+Crie a base de dados `rankgit` e carregue o schema inicial:
+```bash
+psql -U postgres -c "CREATE DATABASE rankgit;"
 psql -U postgres -d rankgit -f database.sql
 ```
 
----
-
 ### 3. Iniciar o Backend (Spring Boot 3)
-Em um terminal, acesse a pasta `/backend`:
 ```bash
 cd backend
 mvn clean spring-boot:run
 ```
-O servidor Spring Boot iniciará em: **`http://localhost:8080`**.
-
----
+Disponível em: `http://localhost:8080`.
 
 ### 4. Iniciar o Frontend (Angular 21)
-Em outro terminal, acesse a pasta `/frontend`:
 ```bash
 cd frontend
 npm install
 npm start
 ```
-A aplicação iniciará em: **`http://localhost:4200`**.
+Disponível em: `http://localhost:4200`.
 
 ---
 
