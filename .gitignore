@@ -1,0 +1,89 @@
+# ==========================================
+# RankGit - Arquivo .gitignore de Segurança
+# ==========================================
+
+# Arquivos de ambiente e segredos sensíveis (NUNCA COMMITTAR)
+.env
+.env.*
+*.env
+!.env.example
+secrets.*
+credentials.*
+*.pem
+*.key
+*.jks
+*.keystore
+*.p12
+*.crt
+*.cer
+
+# Backend (Java / Maven / Spring Boot)
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+.mvn/wrapper/maven-wrapper.jar
+
+# Frontend (Angular / Node.js)
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.angular/
+**/.angular/
+.npm/
+**/.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs e arquivos de depuração
+*.log
+logs/
+**/logs/
+
+# IDEs e Editores de Código
+.idea/
+**/.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+**/.vscode/
+.settings/
+**/.settings/
+.project
+**/.project
+.classpath
+**/.classpath
+
+# Sistema Operacional
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# Diretórios temporários de agentes e scratch
+brain/
+**/brain/
+.gemini/
+**/.gemini/
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Backups de Banco de Dados
+*.dump
+*.sql.bak
+*.sql.gz
