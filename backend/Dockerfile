@@ -25,7 +25,7 @@ USER rankgit:rankgit
 COPY --from=build --chown=rankgit:rankgit /app/target/*.jar app.jar
 
 # Configuração de memória otimizada para o tier gratuito do Render (512MB RAM)
-ENV JAVA_OPTS="-Xms128m -Xmx384m -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
+ENV JAVA_OPTS="-Xms64m -Xmx256m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m -XX:+ExitOnOutOfMemoryError"
 
 EXPOSE 8080
 
