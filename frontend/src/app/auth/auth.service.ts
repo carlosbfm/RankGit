@@ -3,13 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, of } from 'rxjs';
 import { AuthResponse, UserProfile } from './auth.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private readonly TOKEN_KEY = 'rankgit_auth_token';
-  private readonly API_BASE = 'http://localhost:8080';
+  private readonly API_BASE = environment.apiUrl;
 
   // Signals para estado reativo moderno
   currentUser = signal<UserProfile | null>(null);

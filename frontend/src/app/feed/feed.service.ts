@@ -2,12 +2,13 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { FeedPageResponse } from './feed.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FeedService {
-  private readonly API_BASE = 'http://localhost:8080/api/feed';
+  private readonly API_BASE = `${environment.apiUrl}/api/feed`;
 
   isLoading = signal<boolean>(false);
   isSyncing = signal<boolean>(false);

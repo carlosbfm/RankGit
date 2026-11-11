@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { UserProfile } from '../auth/auth.model';
+import { environment } from '../../environments/environment';
 
 export interface SyncSummary {
   totalProcessed: number;
@@ -32,7 +33,7 @@ export interface AdminUserFormData {
   providedIn: 'root'
 })
 export class AdminService {
-  private readonly API_BASE = 'http://localhost:8080/api/admin';
+  private readonly API_BASE = `${environment.apiUrl}/api/admin`;
 
   isProcessing = signal<boolean>(false);
   lastSyncMessage = signal<string | null>(null);

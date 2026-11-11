@@ -2,12 +2,13 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { DeveloperDetails, LeaderboardResponse, RankingFilterParams } from './ranking.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class RankingService {
-  private readonly API_BASE = 'http://localhost:8080/api/rankings';
+  private readonly API_BASE = `${environment.apiUrl}/api/rankings`;
 
   leaderboardData = signal<LeaderboardResponse | null>(null);
   isLoading = signal<boolean>(false);
